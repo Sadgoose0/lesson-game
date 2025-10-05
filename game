@@ -1,0 +1,98 @@
+import pygame as pg
+import pygame_menu
+
+pg.init()
+W, H = 480, 640
+display = pg.display.set_mode((W, H))
+pg.display.set_caption('Game')
+
+FPS = 60
+
+score = 0
+font_name = pg.font.match_font('Comic Sans', True, False)
+font = pg.font.Font(font_name, 36)
+
+class Sprite(pg.sprite.Sprite):
+    def __init__(self, x, y, image_path):
+        super().__init__()
+        self.image = pg.image.load(image_path)
+        self.rect = self.image.get_rect(topleft=(x, y))
+        self.dead = False
+
+    def update(self):
+        super().update()
+
+    def draw(self):
+        display.blit(self.image, self.rect)
+
+    def kill(self):
+        self.dead = True
+        super().kill()
+
+def draw_text(text: str, x: int, y: int):
+    score_text = font.render(text, True, (0, 0, 0))
+    display.blit(score_text, (x, y))
+
+class Player(Sprite):
+    def __init__(self):
+        super().__init__(W // 2, H //2, 'doodle_left.png')
+        self.image_left = self.image
+        self.image_right=pg.transform.flip(self.image, True, False)
+        #self.rect = self.image.get_rect(center=(W // 2, H // 2))
+        self.speed = 0
+
+    def update(self):
+        if self.dead:
+            return
+        if self.rect.y > H:
+            self.kill()
+        keys = pg.key.get_pressed()
+        if keys[pg.K_LEFT]:
+            self.rect.x -= 5
+            self.image = self.image_left
+        if keys[pg.K_RIGHT]:
+            self.rect.x += 5
+            self.image = self.image_right
+
+        if self.rect.left > W:
+            self.rect.left = 0
+        if self.rect.right < 0:
+            self.rect.right = W
+
+    def draw(self):
+        if self.rect.y > H:
+            self.rect.y = H // 2
+            # draw_text('Game Over', W // 2 - 30, H // 2 - 10)
+        else:
+            display.blit(self.image, self.rect)
+        if self.dead: # if self.rect.y > H:
+            # self.rect.y = H // 2
+            draw_text('Game Over', W // 2 - 70, H // 2 - 10)
+        else:
+            display.blit(self.image, self.rect)
+
+def main():
+    passed_time = 0
+    while True:
+        for e in pg.event.get():
+            if e.type == pg.QUIT:
+                return
+
+        def show_end_screen():
+            end_menu = pygame_menu.Menu('Игра окончена', 300, 400, theme=pygame_menu.themes.THEME_BLUE)
+            end_menu.add.label(f'Всего очков: {score}', font_size=30)
+            end_menu.add.button('Заного', main)
+            end_menu.add.button('Выйти', pygame_menu.event.EXIT)
+            end_menu.mainloop(display)
+
+        def show_start_screen():
+            menu = pygame_menu.Menu('Game', 300, 400, theme=pygame_menu.themes.THEME_BLUE)
+            menu.add.button('Начать', main)
+            menu.add.button('Выйти', pygame_menu.event.EXIT)
+            menu.mainloop(display)
+
+        pg.display.update()
+        pg.time.delay(FPS)
+
+if __name__ == '__main__':
+    main()
